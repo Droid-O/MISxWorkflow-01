@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#0e0e11" />
+  <title>Concept Studio · Sela Venues</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,600;1,9..144,500&family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <span class="brand-mark">◆</span>
+      <div>
+        <div class="brand-title">Concept Studio</div>
+        <div class="brand-sub">Sela venues · MIS</div>
+      </div>
+    </div>
+    <button id="settingsBtn" class="ghost-btn" title="Settings">⚙ Settings</button>
+  </header>
+
+  <main class="layout">
+    <!-- Left: the brief builder -->
+    <section class="panel builder">
+      <div class="stage-toggle" role="tablist">
+        <button class="stage-tab active" data-mode="stage1" role="tab">
+          <span class="stage-num">1</span>
+          <span class="stage-text"><strong>Directions</strong><small>before Pinterest</small></span>
+        </button>
+        <button class="stage-tab" data-mode="stage2" role="tab">
+          <span class="stage-num">2</span>
+          <span class="stage-text"><strong>Build on references</strong><small>after Pinterest</small></span>
+        </button>
+      </div>
+
+      <label class="field-label">Venue</label>
+      <div id="venueGrid" class="venue-grid"></div>
+
+      <label class="field-label" for="postType">Post type</label>
+      <select id="postType" class="input"></select>
+
+      <label class="field-label" for="occasion">Occasion / brief details</label>
+      <textarea id="occasion" class="input" rows="3"
+        placeholder="e.g. Al Hilal vs Al Nassr — Saturday, 9PM. Big rivalry night."></textarea>
+
+      <!-- Stage 2 only -->
+      <div id="stage2Block" class="stage2-block hidden">
+        <label class="field-label">References</label>
+        <div id="dropzone" class="dropzone">
+          <input type="file" id="fileInput" accept="image/*" multiple hidden />
+          <div class="dz-inner">
+            <span class="dz-icon">⤓</span>
+            <span>Drop reference images here, click to browse, or paste an image</span>
+          </div>
+        </div>
+        <div id="thumbs" class="thumbs"></div>
+        <label class="field-label" for="refNotes">Notes on the references (optional)</label>
+        <textarea id="refNotes" class="input" rows="2"
+          placeholder="What you liked about them, or what to borrow."></textarea>
+      </div>
+
+      <button id="generateBtn" class="primary-btn">Generate concepts</button>
+      <p id="builderHint" class="hint"></p>
+    </section>
+
+    <!-- Right: the output -->
+    <section class="panel output">
+      <div class="output-head">
+        <h2 id="outputTitle">Your concepts</h2>
+        <div class="output-actions">
+          <button id="copyBtn" class="ghost-btn small hidden">Copy</button>
+        </div>
+      </div>
+      <div id="result" class="result">
+        <div class="empty-state">
+          <div class="empty-mark">✦</div>
+          <p>Pick a venue, set the brief, and generate.<br />Stage 1 gives you directions to take into Pinterest. Stage 2 turns your references into a designer-ready brief.</p>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Settings modal -->
+  <div id="settingsModal" class="modal hidden">
+    <div class="modal-card">
+      <h3>Settings</h3>
+      <p class="modal-note">Your Anthropic API key is stored only in this browser (localStorage) and is sent directly to Anthropic. It never touches any other server.</p>
+      <label class="field-label" for="apiKey">Anthropic API key</label>
+      <input type="password" id="apiKey" class="input" placeholder="sk-ant-..." autocomplete="off" />
+      <label class="field-label" for="model">Model</label>
+      <select id="model" class="input">
+        <option value="claude-opus-4-8">Claude Opus 4.8 — best quality</option>
+        <option value="claude-sonnet-4-6">Claude Sonnet 4.6 — faster, cheaper</option>
+      </select>
+      <div class="modal-actions">
+        <button id="saveSettings" class="primary-btn">Save</button>
+        <button id="closeSettings" class="ghost-btn">Close</button>
+      </div>
+      <p class="modal-foot">No key yet? Create one at <a href="https://console.anthropic.com/settings/keys" target="_blank" rel="noopener">console.anthropic.com</a>.</p>
+    </div>
+  </div>
+
+  <script src="venues.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
