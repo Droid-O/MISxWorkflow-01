@@ -6,6 +6,7 @@ It plugs into my process at **two decision points**:
 
 - **Stage 1 — Directions (before Pinterest):** Pick a venue, post type, and occasion. It returns 2–3 distinct creative directions — each with a clear visual direction, a "venue as hero" vs "event as hero" call, and final bilingual (EN + AR) headline and caption. I walk into the reference-gathering session with intent instead of browsing blindly.
 - **Stage 2 — Build on references (after Pinterest):** Drop in the references I gathered (images or notes). It reads them, then produces one production-ready brief that adapts the reference to the right venue's identity and rules — visual direction, designer notes, and final copy in both languages, all in one place. No more rewriting copy after the handoff.
+- **Monthly Plan — a full month of posts:** Pick a venue and month (and list any known events). It proposes the whole month's content as a calendar table — date, post type, concept, and the final EN/AR captions and hashtags for each — mapped to the fields in the venue's presentation template. Export as CSV to drop straight into the deck.
 
 Each venue's tone profile and its real do's and don'ts are baked into the model's instructions (`venues.js`), so the output respects the rules that actually matter — e.g. Kingdom Arena never shows Al Hilal branding and keeps the arena (not the team) as the hero; Jeddah Superdome stays premium and zero-error; RECC stays formal and business-minded; The Venue takes the most creative risk.
 

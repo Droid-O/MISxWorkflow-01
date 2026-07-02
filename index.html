@@ -34,17 +34,41 @@
           <span class="stage-num">2</span>
           <span class="stage-text"><strong>Build on references</strong><small>after Pinterest</small></span>
         </button>
+        <button class="stage-tab" data-mode="plan" role="tab">
+          <span class="stage-num">3</span>
+          <span class="stage-text"><strong>Monthly plan</strong><small>a full month of posts</small></span>
+        </button>
       </div>
 
       <label class="field-label">Venue</label>
       <div id="venueGrid" class="venue-grid"></div>
 
-      <label class="field-label" for="postType">Post type</label>
-      <select id="postType" class="input"></select>
+      <!-- Stage 1 & 2 fields -->
+      <div id="briefFields">
+        <label class="field-label" for="postType">Post type</label>
+        <select id="postType" class="input"></select>
 
-      <label class="field-label" for="occasion">Occasion / brief details</label>
-      <textarea id="occasion" class="input" rows="3"
-        placeholder="e.g. Al Hilal vs Al Nassr — Saturday, 9PM. Big rivalry night."></textarea>
+        <label class="field-label" for="occasion">Occasion / brief details</label>
+        <textarea id="occasion" class="input" rows="3"
+          placeholder="e.g. Al Hilal vs Al Nassr — Saturday, 9PM. Big rivalry night."></textarea>
+      </div>
+
+      <!-- Monthly plan only -->
+      <div id="planBlock" class="hidden">
+        <div class="plan-row">
+          <div>
+            <label class="field-label" for="planMonth">Month</label>
+            <input type="month" id="planMonth" class="input" />
+          </div>
+          <div>
+            <label class="field-label" for="planCount">Posts</label>
+            <input type="number" id="planCount" class="input" value="15" min="1" max="40" />
+          </div>
+        </div>
+        <label class="field-label" for="planNotes">Known events &amp; notes (optional)</label>
+        <textarea id="planNotes" class="input" rows="3"
+          placeholder="Fixed things this month: matches, holidays, launches, national days. It fills in the rest."></textarea>
+      </div>
 
       <!-- Stage 2 only -->
       <div id="stage2Block" class="stage2-block hidden">
@@ -71,6 +95,7 @@
       <div class="output-head">
         <h2 id="outputTitle">Your concepts</h2>
         <div class="output-actions">
+          <button id="csvBtn" class="ghost-btn small hidden">Download CSV</button>
           <button id="copyBtn" class="ghost-btn small hidden">Copy</button>
         </div>
       </div>

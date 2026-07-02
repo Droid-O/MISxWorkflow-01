@@ -65,9 +65,12 @@ a { color: var(--gold); }
 /* Stage toggle */
 .stage-toggle {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: 1fr 1fr 1fr;
   gap: 8px;
   margin-bottom: 20px;
+}
+@media (max-width: 520px) {
+  .stage-toggle { grid-template-columns: 1fr; }
 }
 .stage-tab {
   display: flex;
@@ -242,6 +245,29 @@ textarea.input { line-height: 1.5; }
 .doc strong { color: #fff; font-weight: 600; }
 .doc hr { border: none; border-top: 1px solid var(--line); margin: 22px 0; }
 .doc .ar { font-size: 16px; }
+
+/* Monthly plan inputs */
+.plan-row { display: grid; grid-template-columns: 1fr 90px; gap: 10px; }
+
+/* Plan table */
+.table-wrap { overflow-x: auto; margin: 6px 0 4px; -webkit-overflow-scrolling: touch; }
+.doc table { border-collapse: collapse; width: 100%; font-size: 13px; min-width: 720px; }
+.doc th, .doc td {
+  border: 1px solid var(--line);
+  padding: 8px 10px;
+  text-align: left;
+  vertical-align: top;
+  line-height: 1.45;
+}
+.doc thead th {
+  background: var(--panel-2);
+  color: var(--gold);
+  font-weight: 600;
+  position: sticky;
+  top: 0;
+  white-space: nowrap;
+}
+.doc tbody tr:nth-child(even) { background: rgba(255, 255, 255, 0.02); }
 
 /* Streaming caret */
 .caret::after {

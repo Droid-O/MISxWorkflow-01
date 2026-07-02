@@ -27,6 +27,12 @@ const builderHint = $("builderHint");
 const resultEl = $("result");
 const outputTitle = $("outputTitle");
 const copyBtn = $("copyBtn");
+const csvBtn = $("csvBtn");
+const briefFields = $("briefFields");
+const planBlock = $("planBlock");
+const planMonthEl = $("planMonth");
+const planCountEl = $("planCount");
+const planNotesEl = $("planNotes");
 
 // ---- init: venues + post types ----
 function renderVenues() {
@@ -60,7 +66,14 @@ document.querySelectorAll(".stage-tab").forEach((tab) => {
     tab.classList.add("active");
     state.mode = tab.dataset.mode;
     stage2Block.classList.toggle("hidden", state.mode !== "stage2");
-    generateBtn.textContent = state.mode === "stage1" ? "Generate concepts" : "Build brief";
+    planBlock.classList.toggle("hidden", state.mode !== "plan");
+    briefFields.classList.toggle("hidden", state.mode === "plan");
+    generateBtn.textContent =
+      state.mode === "stage1"
+        ? "Generate concepts"
+        : state.mode === "stage2"
+        ? "Build brief"
+        : "Plan the month";
   });
 });
 
@@ -152,15 +165,30 @@ async function generate() {
     builderHint.textContent = "Add at least one reference image or some notes.";
     return;
   }
+  if (state.mode === "plan" && !planMonthEl.value) {
+    builderHint.textContent = "Pick a month first.";
+    return;
+  }
 
   const model = localStorage.getItem(LS_MODEL) || "claude-opus-4-8";
-  const userText = buildUserMessage(
-    state.mode,
-    state.venue,
-    postTypeSel.value,
-    occasionEl.value,
-    refNotesEl.value
-  );
+  const userText =
+    state.mode === "plan"
+      ? buildUserMessage(
+          "plan",
+          state.venue,
+          "",
+          planNotesEl.value,
+          "",
+          formatMonth(planMonthEl.value),
+          planCountEl.value || 15
+        )
+      : buildUserMessage(
+          state.mode,
+          state.venue,
+          postTypeSel.value,
+          occasionEl.value,
+          refNotesEl.value
+        );
 
   // Build the message content (images first, then text — vision best practice).
   let content;
@@ -178,7 +206,7 @@ async function generate() {
 
   const body = {
     model,
-    max_tokens: 8000,
+    max_tokens: state.mode === "plan" ? 16000 : 8000,
     system: [{ type: "text", text: SYSTEM_PROMPT, cache_control: { type: "ephemeral" } }],
     thinking: { type: "adaptive" },
     output_config: { effort: "medium" },
@@ -225,9 +253,17 @@ function startStreamingUI() {
   generateBtn.disabled = true;
   builderHint.textContent = "";
   copyBtn.classList.add("hidden");
-  outputTitle.textContent = state.mode === "stage1" ? "Directions" : "Designer brief";
+  csvBtn.classList.add("hidden");
+  outputTitle.textContent =
+    state.mode === "stage1"
+      ? "Directions"
+      : state.mode === "stage2"
+      ? "Designer brief"
+      : "Monthly plan";
   resultEl.innerHTML =
-    '<div class="thinking"><span class="spinner"></span> Crafting concepts…</div>';
+    '<div class="thinking"><span class="spinner"></span> ' +
+    (state.mode === "plan" ? "Planning the month…" : "Crafting concepts…") +
+    "</div>";
 }
 
 function endStreamingUI() {
@@ -236,6 +272,7 @@ function endStreamingUI() {
   if (rawOutput.trim()) {
     resultEl.innerHTML = `<div class="doc">${renderMarkdown(rawOutput)}</div>`;
     copyBtn.classList.remove("hidden");
+    csvBtn.classList.toggle("hidden", state.mode !== "plan");
   }
 }
 
@@ -302,20 +339,70 @@ copyBtn.addEventListener("click", async () => {
   } catch (_) {}
 });
 
+// ---- CSV export (monthly plan) ----
+csvBtn.addEventListener("click", () => {
+  const rows = rawOutput
+    .split("\n")
+    .filter((l) => /^\s*\|.*\|\s*$/.test(l))
+    .filter((l) => !/^\s*\|?[\s:-]*\|[\s:|-]*$/.test(l));
+  if (!rows.length) return;
+  const csv = rows
+    .map((r) => splitRow(r).map(csvCell).join(","))
+    .join("\r\n");
+  // BOM so Excel reads Arabic (UTF-8) correctly.
+  const blob = new Blob(["﻿" + csv], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  const venueName = (VENUES[state.venue]?.name || "plan").replace(/\s+/g, "-").toLowerCase();
+  a.href = url;
+  a.download = `${venueName}-${planMonthEl.value || "plan"}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+});
+
+function csvCell(s) {
+  const clean = (s || "").replace(/\*\*/g, "");
+  return `"${clean.replace(/"/g, '""')}"`;
+}
+
+// "2026-03" -> "March 2026"
+function formatMonth(value) {
+  if (!value) return "";
+  const [y, m] = value.split("-");
+  const names = [
+    "January", "February", "March", "April", "May", "June",
+    "July", "August", "September", "October", "November", "December",
+  ];
+  return `${names[Number(m) - 1] || ""} ${y}`.trim();
+}
+
 // ---- tiny markdown renderer (headings, bold, lists, hr, RTL-aware) ----
 function renderMarkdown(md) {
   const lines = md.split("\n");
   let html = "";
   let inList = false;
+  let tableRows = [];
   const closeList = () => {
     if (inList) {
       html += "</ul>";
       inList = false;
     }
   };
+  const closeTable = () => {
+    if (tableRows.length) {
+      html += renderTable(tableRows);
+      tableRows = [];
+    }
+  };
 
   for (let raw of lines) {
     const line = raw.replace(/\s+$/, "");
+    if (/^\s*\|.*\|\s*$/.test(line)) {
+      closeList();
+      tableRows.push(line);
+      continue;
+    }
+    closeTable();
     if (/^###\s+/.test(line)) {
       closeList();
       html += `<h3>${inline(line.replace(/^###\s+/, ""))}</h3>`;
@@ -339,7 +426,36 @@ function renderMarkdown(md) {
     }
   }
   closeList();
+  closeTable();
   return html;
+}
+
+// Split a "| a | b |" markdown row into trimmed cell strings.
+function splitRow(line) {
+  return line
+    .trim()
+    .replace(/^\||\|$/g, "")
+    .split("|")
+    .map((c) => c.trim());
+}
+
+// Render collected pipe-table rows into a scrollable HTML table.
+function renderTable(rows) {
+  // Drop the separator row (|---|---|).
+  const body = rows.filter((r) => !/^\s*\|?[\s:-]*\|[\s:|-]*$/.test(r));
+  if (!body.length) return "";
+  const header = splitRow(body[0]);
+  let out = '<div class="table-wrap"><table><thead><tr>';
+  header.forEach((h) => (out += `<th>${inline(h)}</th>`));
+  out += "</tr></thead><tbody>";
+  body.slice(1).forEach((r) => {
+    const cells = splitRow(r);
+    out += "<tr>";
+    cells.forEach((c) => (out += `<td ${dirAttr(c)}>${inline(c)}</td>`));
+    out += "</tr>";
+  });
+  out += "</tbody></table></div>";
+  return out;
 }
 
 function inline(text) {

@@ -120,13 +120,43 @@ The user has gathered references (attached images and/or described in notes). An
 - **Caption (EN):** … (post-ready)
 - **Caption (AR):** … (post-ready, native)
 
+## MODE: MONTHLY PLAN — FULL CONTENT CALENDAR (before anything is designed)
+You are given a venue, a month, and a target number of posts. Propose the ENTIRE month's content plan for that venue — you decide the posts, using the Saudi calendar, seasons, national days, likely events for this venue type, and any KNOWN EVENTS the user lists. Spread them sensibly across the month and avoid repeating the same idea.
+
+Output ONLY a Markdown table — no text before or after it — with EXACTLY these columns, in this order:
+
+| Date | Post Type | Concept | Caption (EN) | Caption (AR) | Hashtags (EN) | Hashtags (AR) |
+
+Rules for the table:
+- One row per post. Produce the requested number of posts.
+- Date: a specific day or slot within the month (e.g. "Mar 3" or "Mar 3 (Fri)"). Order rows chronologically.
+- Post Type: one of the venue's post types (or a sensible equivalent).
+- Concept: one tight sentence describing the visual idea and the hero choice (venue vs event).
+- Caption (EN) / Caption (AR): FINAL, post-ready copy. The Arabic must read as native, not translated. Keep each to 1–2 sentences so it fits a table cell.
+- Hashtags (EN) / Hashtags (AR): 4–8 relevant hashtags, space-separated, each starting with #.
+- CRITICAL: never use the pipe character "|" or line breaks inside a cell — they break the table. Keep every cell on one line; use commas or spaces instead.
+- Respect the venue's rules and tone above (e.g. Kingdom Arena never shows Al Hilal branding; JDS is zero-error and premium; RECC stays formal; The Venue takes the most creative risk).
+
 # STYLE
 Write tight and useful. No preamble, no "Here's…", no restating the brief back. Lead straight into the directions/brief. Respect the specific venue's rules above — they override any generic instinct.`;
 
 // Build the per-request user message from the form state.
-function buildUserMessage(mode, venueKey, postType, occasion, notes) {
+function buildUserMessage(mode, venueKey, postType, occasion, notes, month, count) {
   const v = VENUES[venueKey];
   const lines = [];
+  if (mode === "plan") {
+    lines.push("MODE: MONTHLY PLAN");
+    lines.push(`VENUE: ${v.name} (${v.city})`);
+    lines.push(`MONTH: ${month}`);
+    lines.push(`NUMBER OF POSTS: ${count}`);
+    lines.push(`AVAILABLE POST TYPES: ${POST_TYPES.join("; ")}`);
+    if (occasion && occasion.trim()) lines.push(`KNOWN EVENTS / NOTES: ${occasion.trim()}`);
+    lines.push("");
+    lines.push(
+      `Propose the full ${count}-post content plan for ${v.name} for ${month}. Output only the Markdown table.`
+    );
+    return lines.join("\n");
+  }
   if (mode === "stage1") {
     lines.push("MODE: STAGE 1 — DIRECTIONS");
   } else {
