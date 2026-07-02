@@ -140,8 +140,26 @@ Rules for the table:
 # STYLE
 Write tight and useful. No preamble, no "Here's…", no restating the brief back. Lead straight into the directions/brief. Respect the specific venue's rules above — they override any generic instinct.`;
 
+// Instruction block that asks the model to append a rough SVG layout mockup.
+function sketchInstruction(v, sketch) {
+  return [
+    "",
+    "---",
+    `Then, AFTER the written brief, append a rough LAYOUT MOCKUP for the strongest single concept as an SVG inside a fenced code block that starts with \`\`\`svg and ends with \`\`\`.`,
+    "Rules for the SVG:",
+    `- Canvas exactly ${sketch.w}x${sketch.h} (a ${sketch.label} social post). Set width, height and viewBox to match.`,
+    "- This is a LAYOUT COMP, not final art: flat shapes, clear blocks, real typography. Do NOT attempt photorealism.",
+    `- Use the venue's colour world (accent ${v.accent}) with a tasteful dark or tonal background.`,
+    "- Represent the hero photo/video as a placeholder rectangle with a short label inside describing the shot (e.g. \"HERO: wide arena bowl, crowd lit\"). Never fake a photograph.",
+    "- Place the English headline large and confident. Place the Arabic headline too, right-aligned, using text-anchor=\"end\" and direction=\"rtl\", at a legible size.",
+    "- Show logo placement as a small labelled box (\"LOGO\"). Keep safe margins.",
+    "- Use only web-safe/generic font-family values (e.g. sans-serif, serif). Keep it clean and readable.",
+    "- Output valid, self-contained SVG only inside that one code block.",
+  ].join("\n");
+}
+
 // Build the per-request user message from the form state.
-function buildUserMessage(mode, venueKey, postType, occasion, notes, month, count) {
+function buildUserMessage(mode, venueKey, postType, occasion, notes, month, count, sketch) {
   const v = VENUES[venueKey];
   const lines = [];
   if (mode === "plan") {
@@ -174,5 +192,6 @@ function buildUserMessage(mode, venueKey, postType, occasion, notes, month, coun
   } else {
     lines.push("Build me one production-ready brief based on the attached/described references, adapted to this venue's identity. I'll hand this straight to the designer.");
   }
+  if (sketch) lines.push(sketchInstruction(v, sketch));
   return lines.join("\n");
 }

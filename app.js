@@ -28,11 +28,24 @@ const resultEl = $("result");
 const outputTitle = $("outputTitle");
 const copyBtn = $("copyBtn");
 const csvBtn = $("csvBtn");
+const svgBtn = $("svgBtn");
 const briefFields = $("briefFields");
 const planBlock = $("planBlock");
 const planMonthEl = $("planMonth");
 const planCountEl = $("planCount");
 const planNotesEl = $("planNotes");
+const sketchToggle = $("sketchToggle");
+const sketchRatio = $("sketchRatio");
+
+const SKETCH_SIZES = {
+  feed: { label: "4:5 feed", w: 1080, h: 1350 },
+  square: { label: "1:1 square", w: 1080, h: 1080 },
+  story: { label: "9:16 story", w: 1080, h: 1920 },
+};
+
+sketchToggle.addEventListener("change", () => {
+  sketchRatio.classList.toggle("hidden", !sketchToggle.checked);
+});
 
 // ---- init: venues + post types ----
 function renderVenues() {
@@ -187,7 +200,10 @@ async function generate() {
           state.venue,
           postTypeSel.value,
           occasionEl.value,
-          refNotesEl.value
+          refNotesEl.value,
+          null,
+          null,
+          sketchToggle.checked ? SKETCH_SIZES[sketchRatio.value] : null
         );
 
   // Build the message content (images first, then text — vision best practice).
@@ -254,6 +270,7 @@ function startStreamingUI() {
   builderHint.textContent = "";
   copyBtn.classList.add("hidden");
   csvBtn.classList.add("hidden");
+  svgBtn.classList.add("hidden");
   outputTitle.textContent =
     state.mode === "stage1"
       ? "Directions"
@@ -273,6 +290,7 @@ function endStreamingUI() {
     resultEl.innerHTML = `<div class="doc">${renderMarkdown(rawOutput)}</div>`;
     copyBtn.classList.remove("hidden");
     csvBtn.classList.toggle("hidden", state.mode !== "plan");
+    svgBtn.classList.toggle("hidden", !extractSvg(rawOutput));
   }
 }
 
@@ -360,6 +378,20 @@ csvBtn.addEventListener("click", () => {
   URL.revokeObjectURL(url);
 });
 
+// ---- SVG sketch download ----
+svgBtn.addEventListener("click", () => {
+  const svg = extractSvg(rawOutput);
+  if (!svg) return;
+  const blob = new Blob([svg], { type: "image/svg+xml;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  const venueName = (VENUES[state.venue]?.name || "sketch").replace(/\s+/g, "-").toLowerCase();
+  a.href = url;
+  a.download = `${venueName}-sketch.svg`;
+  a.click();
+  URL.revokeObjectURL(url);
+});
+
 function csvCell(s) {
   const clean = (s || "").replace(/\*\*/g, "");
   return `"${clean.replace(/"/g, '""')}"`;
@@ -382,6 +414,9 @@ function renderMarkdown(md) {
   let html = "";
   let inList = false;
   let tableRows = [];
+  let inCode = false;
+  let codeLang = "";
+  let codeBuf = [];
   const closeList = () => {
     if (inList) {
       html += "</ul>";
@@ -396,6 +431,25 @@ function renderMarkdown(md) {
   };
 
   for (let raw of lines) {
+    // Fenced code blocks (```svg ... ```) — render SVG sketches inline.
+    const fence = raw.trim().match(/^```(\w*)/);
+    if (fence) {
+      if (!inCode) {
+        closeList();
+        closeTable();
+        inCode = true;
+        codeLang = fence[1].toLowerCase();
+        codeBuf = [];
+      } else {
+        html += renderCode(codeLang, codeBuf.join("\n"), false);
+        inCode = false;
+      }
+      continue;
+    }
+    if (inCode) {
+      codeBuf.push(raw);
+      continue;
+    }
     const line = raw.replace(/\s+$/, "");
     if (/^\s*\|.*\|\s*$/.test(line)) {
       closeList();
@@ -427,7 +481,26 @@ function renderMarkdown(md) {
   }
   closeList();
   closeTable();
+  if (inCode) html += renderCode(codeLang, codeBuf.join("\n"), true); // still streaming
   return html;
+}
+
+// Render a fenced code block. SVG is drawn inline; anything still streaming
+// shows a placeholder so we never inject a half-written tag.
+function renderCode(lang, code, streaming) {
+  if (lang === "svg") {
+    if (streaming) {
+      return '<div class="sketch-loading"><span class="spinner"></span> Drawing layout sketch…</div>';
+    }
+    return `<figure class="sketch">${code}</figure>`;
+  }
+  return `<pre class="code">${escapeHtml(code)}</pre>`;
+}
+
+// Pull the first complete SVG out of the raw output (for download).
+function extractSvg(text) {
+  const m = text.match(/<svg[\s\S]*?<\/svg>/i);
+  return m ? m[0] : "";
 }
 
 // Split a "| a | b |" markdown row into trimmed cell strings.

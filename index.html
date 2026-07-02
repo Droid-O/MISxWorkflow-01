@@ -51,6 +51,16 @@
         <label class="field-label" for="occasion">Occasion / brief details</label>
         <textarea id="occasion" class="input" rows="3"
           placeholder="e.g. Al Hilal vs Al Nassr — Saturday, 9PM. Big rivalry night."></textarea>
+
+        <label class="sketch-toggle">
+          <input type="checkbox" id="sketchToggle" />
+          <span>Include a rough layout sketch (SVG)</span>
+        </label>
+        <select id="sketchRatio" class="input hidden">
+          <option value="feed">Feed · 4:5 (1080×1350)</option>
+          <option value="square">Square · 1:1 (1080×1080)</option>
+          <option value="story">Story · 9:16 (1080×1920)</option>
+        </select>
       </div>
 
       <!-- Monthly plan only -->
@@ -96,6 +106,7 @@
         <h2 id="outputTitle">Your concepts</h2>
         <div class="output-actions">
           <button id="csvBtn" class="ghost-btn small hidden">Download CSV</button>
+          <button id="svgBtn" class="ghost-btn small hidden">Download sketch</button>
           <button id="copyBtn" class="ghost-btn small hidden">Copy</button>
         </div>
       </div>

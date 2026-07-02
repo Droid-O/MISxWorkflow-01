@@ -269,6 +269,42 @@ textarea.input { line-height: 1.5; }
 }
 .doc tbody tr:nth-child(even) { background: rgba(255, 255, 255, 0.02); }
 
+/* Layout sketch toggle */
+.sketch-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 16px 0 8px;
+  font-size: 13px;
+  color: var(--muted);
+  cursor: pointer;
+}
+.sketch-toggle input { accent-color: var(--gold); width: 15px; height: 15px; }
+#sketchRatio { margin-top: 4px; }
+
+/* Rendered SVG sketch */
+.sketch {
+  margin: 16px 0;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  overflow: hidden;
+  background: #000;
+  max-width: 420px;
+}
+.sketch svg { width: 100%; height: auto; display: block; }
+.sketch-loading {
+  display: inline-flex; align-items: center; gap: 8px;
+  color: var(--muted); font-size: 14px; margin: 16px 0;
+}
+.code {
+  background: var(--panel-2);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 12px;
+  overflow-x: auto;
+  font-size: 12px;
+}
+
 /* Streaming caret */
 .caret::after {
   content: "▍";
