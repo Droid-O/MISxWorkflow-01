@@ -38,6 +38,10 @@
           <span class="stage-num">3</span>
           <span class="stage-text"><strong>Monthly plan</strong><small>a full month of posts</small></span>
         </button>
+        <button class="stage-tab" data-mode="rename" role="tab">
+          <span class="stage-num">4</span>
+          <span class="stage-text"><strong>Rename files</strong><small>month-end export names</small></span>
+        </button>
       </div>
 
       <label class="field-label">Venue</label>
@@ -96,6 +100,23 @@
           placeholder="What you liked about them, or what to borrow."></textarea>
       </div>
 
+      <!-- Rename files only -->
+      <div id="renameBlock" class="hidden">
+        <label class="field-label" for="renamePrefix">Name prefix</label>
+        <input id="renamePrefix" class="input" placeholder="Kingdom Arena" />
+        <label class="field-label" for="renameStart">Start post number</label>
+        <input type="number" id="renameStart" class="input" value="1" min="1" max="99" />
+        <label class="field-label">Files</label>
+        <div id="renameDrop" class="dropzone">
+          <input type="file" id="renameInput" accept="image/*" multiple hidden />
+          <div class="dz-inner">
+            <span class="dz-icon">⤓</span>
+            <span>Drop this month's exported posts here, or click to browse</span>
+          </div>
+        </div>
+        <p class="hint">It reads each image's size automatically and groups the sizes of each post by their shared file name.</p>
+      </div>
+
       <button id="generateBtn" class="primary-btn">Generate concepts</button>
       <p id="builderHint" class="hint"></p>
     </section>
@@ -106,7 +127,9 @@
         <h2 id="outputTitle">Your concepts</h2>
         <div class="output-actions">
           <button id="csvBtn" class="ghost-btn small hidden">Download CSV</button>
+          <button id="capBtn" class="ghost-btn small hidden">Copy captions</button>
           <button id="svgBtn" class="ghost-btn small hidden">Download sketch</button>
+          <button id="dlAllBtn" class="ghost-btn small hidden">Download all renamed</button>
           <button id="copyBtn" class="ghost-btn small hidden">Copy</button>
         </div>
       </div>

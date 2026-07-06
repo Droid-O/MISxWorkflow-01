@@ -10,6 +10,7 @@ const state = {
   venue: "kingdom-arena",
   images: [], // { id, media_type, data (base64), url }
   streaming: false,
+  renameFiles: [], // { file, orig, base, w, h }
 };
 
 // ---- element refs ----
@@ -28,12 +29,19 @@ const resultEl = $("result");
 const outputTitle = $("outputTitle");
 const copyBtn = $("copyBtn");
 const csvBtn = $("csvBtn");
+const capBtn = $("capBtn");
 const svgBtn = $("svgBtn");
+const dlAllBtn = $("dlAllBtn");
 const briefFields = $("briefFields");
 const planBlock = $("planBlock");
 const planMonthEl = $("planMonth");
 const planCountEl = $("planCount");
 const planNotesEl = $("planNotes");
+const renameBlock = $("renameBlock");
+const renamePrefix = $("renamePrefix");
+const renameStart = $("renameStart");
+const renameDrop = $("renameDrop");
+const renameInput = $("renameInput");
 const sketchToggle = $("sketchToggle");
 const sketchRatio = $("sketchRatio");
 
@@ -78,15 +86,20 @@ document.querySelectorAll(".stage-tab").forEach((tab) => {
     document.querySelectorAll(".stage-tab").forEach((t) => t.classList.remove("active"));
     tab.classList.add("active");
     state.mode = tab.dataset.mode;
-    stage2Block.classList.toggle("hidden", state.mode !== "stage2");
-    planBlock.classList.toggle("hidden", state.mode !== "plan");
-    briefFields.classList.toggle("hidden", state.mode === "plan");
+    const m = state.mode;
+    stage2Block.classList.toggle("hidden", m !== "stage2");
+    planBlock.classList.toggle("hidden", m !== "plan");
+    renameBlock.classList.toggle("hidden", m !== "rename");
+    briefFields.classList.toggle("hidden", m === "plan" || m === "rename");
+    generateBtn.classList.toggle("hidden", m === "rename");
     generateBtn.textContent =
-      state.mode === "stage1"
-        ? "Generate concepts"
-        : state.mode === "stage2"
-        ? "Build brief"
-        : "Plan the month";
+      m === "stage1" ? "Generate concepts" : m === "stage2" ? "Build brief" : "Plan the month";
+    if (m === "rename") {
+      if (!renamePrefix.value) renamePrefix.value = VENUES[state.venue]?.name || "";
+      renderRenamePreview();
+    } else {
+      dlAllBtn.classList.add("hidden");
+    }
   });
 });
 
@@ -141,6 +154,127 @@ window.addEventListener("paste", (e) => {
   const items = e.clipboardData?.items || [];
   const files = [...items].filter((i) => i.kind === "file").map((i) => i.getAsFile());
   if (files.length) addFiles(files);
+});
+
+// ---- rename files (month-end export naming) ----
+renameDrop.addEventListener("click", () => renameInput.click());
+renameInput.addEventListener("change", (e) => addRenameFiles(e.target.files));
+["dragover", "dragenter"].forEach((ev) =>
+  renameDrop.addEventListener(ev, (e) => {
+    e.preventDefault();
+    renameDrop.classList.add("drag");
+  })
+);
+["dragleave", "drop"].forEach((ev) =>
+  renameDrop.addEventListener(ev, (e) => {
+    e.preventDefault();
+    renameDrop.classList.remove("drag");
+  })
+);
+renameDrop.addEventListener("drop", (e) => addRenameFiles(e.dataTransfer.files));
+renamePrefix.addEventListener("input", renderRenamePreview);
+renameStart.addEventListener("input", renderRenamePreview);
+
+// Strip extension and any trailing size token so the 3 sizes of one post share a base.
+function baseName(filename) {
+  let n = filename.replace(/\.[^.]+$/, "");
+  n = n.replace(/[ _\-]*\(?\s*\d{3,4}\s*[x×]\s*\d{3,4}\s*\)?\s*$/i, "");
+  n = n.replace(/[ _\-]+$/, "").trim();
+  return n || filename;
+}
+
+function readSize(file) {
+  return new Promise((resolve) => {
+    const url = URL.createObjectURL(file);
+    const img = new Image();
+    img.onload = () => {
+      resolve({ w: img.naturalWidth, h: img.naturalHeight });
+      URL.revokeObjectURL(url);
+    };
+    img.onerror = () => {
+      resolve({ w: 0, h: 0 });
+      URL.revokeObjectURL(url);
+    };
+    img.src = url;
+  });
+}
+
+async function addRenameFiles(files) {
+  const imgs = [...files].filter((f) => f.type.startsWith("image/"));
+  for (const file of imgs) {
+    const { w, h } = await readSize(file);
+    state.renameFiles.push({ file, orig: file.name, base: baseName(file.name), w, h });
+  }
+  renderRenamePreview();
+}
+
+// Compute the new name for each file, grouping shared base names into post numbers.
+function computeRenames() {
+  const prefix = (renamePrefix.value || VENUES[state.venue]?.name || "Post").trim();
+  const start = parseInt(renameStart.value, 10) || 1;
+  const groupIndex = {};
+  let next = 0;
+  return state.renameFiles.map((f) => {
+    if (!(f.base in groupIndex)) groupIndex[f.base] = next++;
+    const num = String(start + groupIndex[f.base]).padStart(2, "0");
+    const ext = (f.orig.match(/\.[^.]+$/) || [".png"])[0];
+    const newName = `${prefix}_Post_${num} (${f.w}x${f.h})${ext}`;
+    return { ...f, newName };
+  });
+}
+
+function renderRenamePreview() {
+  if (state.mode !== "rename") return;
+  outputTitle.textContent = "Renamed files";
+  copyBtn.classList.add("hidden");
+  csvBtn.classList.add("hidden");
+  capBtn.classList.add("hidden");
+  svgBtn.classList.add("hidden");
+
+  if (!state.renameFiles.length) {
+    dlAllBtn.classList.add("hidden");
+    resultEl.innerHTML =
+      '<div class="empty-state"><div class="empty-mark">⤓</div><p>Drop your exported posts on the left. I\'ll detect each size and rename them to your convention, then you download them all.</p></div>';
+    return;
+  }
+
+  const rows = computeRenames();
+  let html = '<div class="doc"><div class="table-wrap"><table><thead><tr>';
+  html += "<th>Original</th><th>Size</th><th>New name</th></tr></thead><tbody>";
+  rows.forEach((r) => {
+    html += `<tr><td>${escapeHtml(r.orig)}</td><td>${r.w}×${r.h}</td><td>${escapeHtml(
+      r.newName
+    )}</td></tr>`;
+  });
+  html += "</tbody></table></div>";
+  html +=
+    '<button id="clearRename" class="ghost-btn small" style="margin-top:14px">Clear files</button></div>';
+  resultEl.innerHTML = html;
+  $("clearRename").addEventListener("click", () => {
+    state.renameFiles = [];
+    renderRenamePreview();
+  });
+  dlAllBtn.classList.remove("hidden");
+}
+
+// Download each file under its new name, one after another.
+dlAllBtn.addEventListener("click", async () => {
+  const rows = computeRenames();
+  dlAllBtn.disabled = true;
+  dlAllBtn.textContent = "Downloading…";
+  for (const r of rows) {
+    const url = URL.createObjectURL(r.file);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = r.newName;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+    await new Promise((res) => setTimeout(res, 300));
+  }
+  dlAllBtn.disabled = false;
+  dlAllBtn.textContent = "Download all renamed";
 });
 
 // ---- settings ----
@@ -270,7 +404,9 @@ function startStreamingUI() {
   builderHint.textContent = "";
   copyBtn.classList.add("hidden");
   csvBtn.classList.add("hidden");
+  capBtn.classList.add("hidden");
   svgBtn.classList.add("hidden");
+  dlAllBtn.classList.add("hidden");
   outputTitle.textContent =
     state.mode === "stage1"
       ? "Directions"
@@ -290,9 +426,41 @@ function endStreamingUI() {
     resultEl.innerHTML = `<div class="doc">${renderMarkdown(rawOutput)}</div>`;
     copyBtn.classList.remove("hidden");
     csvBtn.classList.toggle("hidden", state.mode !== "plan");
+    capBtn.classList.toggle("hidden", state.mode !== "plan");
     svgBtn.classList.toggle("hidden", !extractSvg(rawOutput));
   }
 }
+
+// Parse the plan table into ordered rows of cells (header dropped).
+function planRows() {
+  const rows = rawOutput
+    .split("\n")
+    .filter((l) => /^\s*\|.*\|\s*$/.test(l))
+    .filter((l) => !/^\s*\|?[\s:-]*\|[\s:|-]*$/.test(l))
+    .map(splitRow);
+  return rows.slice(1); // drop header
+}
+
+// ---- copy captions, ordered, for the monthly Google Doc ----
+capBtn.addEventListener("click", async () => {
+  const start = 1;
+  const blocks = planRows().map((c, i) => {
+    const num = String(start + i).padStart(2, "0");
+    const [date, type, , enCap, arCap, enTags, arTags] = c;
+    const lines = [`Post ${num} — ${type || ""}${date ? ` (${date})` : ""}`.trim()];
+    if (enCap) lines.push(enCap);
+    if (arCap) lines.push(arCap);
+    if (enTags) lines.push(enTags);
+    if (arTags) lines.push(arTags);
+    return lines.join("\n");
+  });
+  const text = blocks.join("\n\n");
+  try {
+    await navigator.clipboard.writeText(text);
+    capBtn.textContent = "Copied ✓";
+    setTimeout(() => (capBtn.textContent = "Copy captions"), 1500);
+  } catch (_) {}
+});
 
 // Parse the SSE stream and append text deltas as they arrive.
 async function consumeStream(res) {

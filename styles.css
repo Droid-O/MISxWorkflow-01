@@ -65,11 +65,11 @@ a { color: var(--gold); }
 /* Stage toggle */
 .stage-toggle {
   display: grid;
-  grid-template-columns: 1fr 1fr 1fr;
+  grid-template-columns: 1fr 1fr;
   gap: 8px;
   margin-bottom: 20px;
 }
-@media (max-width: 520px) {
+@media (max-width: 420px) {
   .stage-toggle { grid-template-columns: 1fr; }
 }
 .stage-tab {
